@@ -3,13 +3,15 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class UserManagementController extends Controller
 {
 
     public function index()
-    {
+    {   
+        $users = User::all();
         return view('admin.users.index');
     }
 
@@ -19,7 +21,19 @@ class UserManagementController extends Controller
     }
     public function store(Request $request)
     {
-        return redirect()->route('admin.users.index');
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users',
+            'password' => 'required|min:6|confirmed',
+        ]);
+    
+        User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => bcrypt($request->password),
+        ]);
+    
+        return redirect()->route('admin.users.index')->with('success', 'Thêm người dùng thành công.');
     }
 
     public function edit($id)
@@ -29,11 +43,22 @@ class UserManagementController extends Controller
 
     public function update(Request $request, $id)
     {
-        return redirect()->route('admin.users.index');
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,' . $id,
+        ]);
+    
+        $user = User::findOrFail($id);
+        $user->update($request->only(['name', 'email']));
+    
+        return redirect()->route('admin.users.index')->with('success', 'Cập nhật người dùng thành công.');
     }
 
     public function destroy($id)
     {
-        return redirect()->route('admin.users.index');
+        $user = User::findOrFail($id);
+        $user->delete();
+    
+        return redirect()->route('admin.users.index')->with('success', 'Xóa người dùng thành công.');
     }
 }
